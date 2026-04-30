@@ -4,12 +4,16 @@ import re
 from types import CodeType
 from typing import *
 
+import numpy as np
 import numpy.typing as npt
 from auto_all import public
 
 
-def reduce_valid(valid: npt.ArrayLike, *args: Tuple[npt.ArrayLike]) -> Iterator[npt.ArrayLike]:
-    """ Reduce a sequence of numpy arrays based on a `valid` condition 
+@public
+def reduce_valid(
+    valid: npt.ArrayLike, *args: Tuple[npt.ArrayLike]
+) -> Iterator[npt.ArrayLike]:
+    """Reduce a sequence of numpy arrays based on a `valid` condition
     Args:
         valid [npt.ArrayLike]: Which elements to accept
         *args [Tuple[npt.ArrayLike]]: Arrays to filter
@@ -21,12 +25,35 @@ def reduce_valid(valid: npt.ArrayLike, *args: Tuple[npt.ArrayLike]) -> Iterator[
 
 @public
 def get_anno_class(anno: inspect.Parameter):
-    """ Gets the annotation class associated with a type annotation (if any). """
+    """Gets the annotation class associated with a type annotation (if any)."""
     return next(map(get_anno_class, getattr(anno, "__args__", [])), anno)
 
 
 @public
-def create_dummy_function(sig: Union[Callable, inspect.Signature], source_fname: Optional[str]=None, code_return: bool=False) -> Union[Callable[..., Any], CodeType]:
+def compare_args(a: Any, b: Any) -> bool:
+    """Compare two arguments for equality, with special handling for numpy arrays."""
+    if a.__class__ != b.__class__:
+        return False
+
+    try:
+        return bool(a == b)
+    except ValueError:
+        a, b = map(lambda x: np.atleast_1d(x), (a, b))
+        if getattr(a, "dimensionality", None) != getattr(b, "dimensionality", None):
+            return False
+
+        a, b = map(
+            lambda x: getattr(x, "m_as", lambda _: x)(getattr(a, "units", 1)), (a, b)
+        )
+        return np.array_equal(a, b) or np.allclose(a, b, atol=0)
+
+
+@public
+def create_dummy_function(
+    sig: Union[Callable, inspect.Signature],
+    source_fname: Optional[str] = None,
+    code_return: bool = False,
+) -> Union[Callable[..., Any], CodeType]:
     """
     Creates a dummy function with the same signature as provided that just returns the arguments.
     """
@@ -34,7 +61,9 @@ def create_dummy_function(sig: Union[Callable, inspect.Signature], source_fname:
         source_fname = sig.__name__
         sig = inspect.signature(sig)
     else:
-        assert source_fname is not None, "source_fname must be provided if sig is a Signature"
+        assert (
+            source_fname is not None
+        ), "source_fname must be provided if sig is a Signature"
 
     # Construct the function definition string
     # This involves iterating through parameters to get names, defaults, and annotations
@@ -49,16 +78,20 @@ def create_dummy_function(sig: Union[Callable, inspect.Signature], source_fname:
             param_str = f"*{param.name}"
         elif param.kind == inspect.Parameter.VAR_KEYWORD:
             param_str = f"**{param.name}"
-        
+
         if param.annotation != inspect.Parameter.empty:
-            param_str += f": {getattr(param.annotation, '__name__', str(param.annotation))}"
+            param_str += (
+                f": {getattr(param.annotation, '__name__', str(param.annotation))}"
+            )
         if param.default != inspect.Parameter.empty:
-            param_str += f" = {re.match(r'<?([^>]*)>?', repr(param.default)).group(1)}" # Use repr for accurate representation of default values
-        
+            param_str += f" = {re.match(r'<?([^>]*)>?', repr(param.default)).group(1)}"  # Use repr for accurate representation of default values
+
         param_strings.append(param_str)
 
-    func_code = ast.parse(f"def {source_fname}_dummy_func({', '.join(param_strings)}):\n    return vars()\n")
- 
+    func_code = ast.parse(
+        f"def {source_fname}_dummy_func({', '.join(param_strings)}):\n    return vars()\n"
+    )
+
     # Compile the AST into a code object
     code = compile(func_code, filename="<ast>", mode="exec")
     if code_return:
@@ -71,11 +104,11 @@ def create_dummy_function(sig: Union[Callable, inspect.Signature], source_fname:
         except NameError as e:
             missing_name = re.search(r"name '(\S+)' is not defined", str(e)).group(1)
             raise e
-            
+
     return globals()[f"{source_fname}_dummy_func"]
 
 
 @public
 def scripting_unit_conv(func: Callable[..., Any], *args, **kwargs) -> Any:
-    """ Decorator to convert units for use in scripting environments """
+    """Decorator to convert units for use in scripting environments"""
     return create_dummy_function(func)(*args, **kwargs)

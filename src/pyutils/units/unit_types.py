@@ -21,18 +21,19 @@ NUM = TypeVar("NUM", *NUM.__constraints__, Quantity, PlainQuantity)
 @dataclass
 class UnitType(Quantity):
     """Base class for unit types."""
+
     value: Union[Quantity, PlainQuantity]
     __unit__: Union[str, Unit, PlainUnit] = ""
 
     @cached_property
-    def units(self):    # type: ignore
+    def units(self):  # type: ignore
         if isinstance(self.__unit__, str):
             return UREG(self.__unit__)
         return self.__unit__
 
     def __new__(cls, num: NUM):
         if getattr(getattr(num, "dtype", None), "type", None) == np.bytes_:
-            num = str(num.astype(str))      # type: ignore
+            num = str(num.astype(str))  # type: ignore
 
         if isinstance(num, (Quantity, PlainQuantity)):
             cls.value = num.to(cls.units.func(cls))
@@ -41,7 +42,7 @@ class UnitType(Quantity):
                 raise ValueError(f"Cannot parse quantity from string: {num}")
             non_num = num.replace(v.group(1), "").strip()
             if non_num and non_num in UREG:
-                if cls.units.func(cls)== UREG.kelvin:  # special case for Kelvin
+                if cls.units.func(cls) == UREG.kelvin:  # special case for Kelvin
                     try:
                         cls.value = np.float64(v.group(1)) * UREG(f"deg{non_num}")
                     except OffsetUnitCalculusError:
@@ -49,12 +50,14 @@ class UnitType(Quantity):
                 else:
                     cls.value = np.float64(v.group(1)) * UREG(non_num)
             else:
-                cls.value = np.float64(v.group(1)) * UREG(f"{non_num}{cls.units.func(cls)}")
+                cls.value = np.float64(v.group(1)) * UREG(
+                    f"{non_num}{cls.units.func(cls)}"
+                )
         else:
             cls.value = num * cls.units.func(cls)
         return cls.value
-    
-    def __init_subclass__(cls, __unit__: Union[str, Unit, PlainUnit], *args, **kwargs) :
+
+    def __init_subclass__(cls, __unit__: Union[str, Unit, PlainUnit], *args, **kwargs):
         cls.__unit__ = __unit__
         return super().__init_subclass__()
 
@@ -63,8 +66,11 @@ start_all()
 NUM = TypeVar("NUM", *NUM.__constraints__, UnitType)
 Vector = Union[*Vector.__args__, PlainQuantity[npt.NDArray[T]]]
 
-for unit in filter(lambda t: isinstance(t, (UREG.Unit, PlainUnit)), map(lambda k: getattr(UREG, k, None), list(UREG) + ["dimensionless"])):
-    name = ''.join(map(lambda s: s.capitalize(), f"{unit:D}".split('_')))
+for unit in filter(
+    lambda t: isinstance(t, (UREG.Unit, PlainUnit)),
+    map(lambda k: getattr(UREG, k, None), list(UREG) + ["dimensionless"]),
+):
+    name = "".join(map(lambda s: s.capitalize(), f"{unit:D}".split("_")))
     globals()[name] = type(name, (UnitType,), {}, __unit__=unit)
 
 end_all()

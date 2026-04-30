@@ -1,4 +1,5 @@
-""" Read data from CSV to be plotted, or plots a dict read from a CSV file. """
+"""Read data from CSV to be plotted, or plots a dict read from a CSV file."""
+
 import csv
 import re
 from collections import defaultdict
@@ -23,14 +24,14 @@ def csv_to_plot(p: PathLike, col_strs: List[str], dtype=float) -> dict:
 
     Cadence labels each column with a string representing the data for the column, e.g "Name (parameter 1,parameter 2,...) Axis".
     This function reads that CSV, uses parameters to index into nested dictionaries, with the deepest level being the axis, indexing the list of values for that axis.
-    
+
     Arguments:
         p: Path to CSV file
         dtype: Data type of data being plotted. Will attempt to use this to parse the CSV.
     Returns:
-        dict: Dictionary containing data to plot    
+        dict: Dictionary containing data to plot
     """
-    
+
     def add_data(data_dict, keys, val):
         if len(keys) == 1:
             data_dict[keys[0]].append(val)
@@ -80,10 +81,10 @@ def plot_dict(
     plot_functions: Union[Dict[str, Callable], Callable] = plt.plot,
     cycler_lists: List[Dict] = [],
     subplot_kw: Dict = {},
-    **kwargs
+    **kwargs,
 ) -> Generator[Tuple[Figure, Dict[str, Axes], Dict[str, PropertiesCycler]], None, None]:
-    """ Plots a dictionary, formatted in the same way as the output of csv_reader. 
-    
+    """Plots a dictionary, formatted in the same way as the output of csv_reader.
+
     Args:
         data_dict (dict): Dictionary with keys as column names and values as lists of data.
         same_axes (bool): If True, all data will be plotted on the same axes. If False, each first-level key will have its own axes.
@@ -111,20 +112,21 @@ def plot_dict(
         ncols = largest_factor
         nrows = num_plots // ncols
 
-
-    def plot_subdict(data: Dict, prev_keys: List=[], **kwargs):
-        """ Recursively plots sub-dictionaries. """
+    def plot_subdict(data: Dict, prev_keys: List = [], **kwargs):
+        """Recursively plots sub-dictionaries."""
         if not isinstance(data, dict):
             raise TypeError("Data must be a dictionary.")
-        
-        if axes_data := dict(filter(lambda e: not isinstance(e[1], dict), data.items())):
+
+        if axes_data := dict(
+            filter(lambda e: not isinstance(e[1], dict), data.items())
+        ):
             plot_kwargs = kwargs.copy()
             plot_key = prev_keys[0] if prev_keys else None
             full_key = ",".join(prev_keys) if prev_keys else "Data"
 
             plt.sca(axes_mapping[plot_key])
             plot_kwargs.update(properties[plot_key][prev_keys])
-            
+
             if axes_data := {k: v for k, v in axes_data.items() if v is not None}:
                 if isinstance(plot_functions, dict):
                     try:
@@ -136,14 +138,20 @@ def plot_dict(
 
                 pf_sig = signature(plot_function)
 
-                ax_args = [v for k, v in sorted(axes_data.items(), key=lambda e: e[0]) if k not in pf_sig.parameters]
-                ax_kwargs = {k: v for k, v in axes_data.items() if k in pf_sig.parameters}
+                ax_args = [
+                    v
+                    for k, v in sorted(axes_data.items(), key=lambda e: e[0])
+                    if k not in pf_sig.parameters
+                ]
+                ax_kwargs = {
+                    k: v for k, v in axes_data.items() if k in pf_sig.parameters
+                }
 
                 plot_function(*ax_args, **ax_kwargs, label=full_key, **plot_kwargs)
 
         for key, value in filter(lambda e: isinstance(e[1], dict), data.items()):
             plot_subdict(value, prev_keys + [key], **kwargs)
-    
+
     if same_figure:
         # Prepare the figure and axes
         fig, axes = plt.subplots(nrows, ncols, squeeze=False, **subplot_kw)
