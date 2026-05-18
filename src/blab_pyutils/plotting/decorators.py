@@ -36,7 +36,7 @@ def save_plots(func: Callable) -> Callable:
         for plot_name, fig in plots.items():
             if images_dir is not None:
                 for ext in map(
-                    lambda e: re.sub("^\.", "", e),
+                    lambda e: re.sub(r"^\.", "", e),
                     os.getenv("IMAGE_FORMATS", ["png", "svg"]),
                 ):
                     fig.savefig(
