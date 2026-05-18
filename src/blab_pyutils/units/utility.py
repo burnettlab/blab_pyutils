@@ -9,8 +9,8 @@ from auto_all import public
 from pint import Quantity
 from pint.facets.plain import PlainQuantity, PlainUnit
 
-from blab-pyutils.decorators import update_signature_from_partial, wrap_once
-from blab-pyutils.funcs import get_anno_class
+from blab_pyutils.decorators import update_signature_from_partial, wrap_once
+from blab_pyutils.funcs import get_anno_class
 
 from . import NUMBER_RE, UREG
 from .unit_types import *

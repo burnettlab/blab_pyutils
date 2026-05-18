@@ -10,7 +10,7 @@ from pint import Quantity, Unit
 from pint.errors import OffsetUnitCalculusError
 from pint.facets.plain import PlainQuantity, PlainUnit
 
-from blab-pyutils.types import NUM, T, Vector
+from blab_pyutils.types import NUM, T, Vector
 
 from . import NUMBER_RE, UREG
 
@@ -46,7 +46,7 @@ class UnitType(Quantity):
                     try:
                         cls.value = np.float64(v.group(1)) * UREG(f"deg{non_num}")
                     except OffsetUnitCalculusError:
-                        cls.value = np.float64(v.group(1)) * UREG(f"delta_deg{non_num}") + UREG.Quantity(0, UREG.degC).to(cls.units.func(cls))   # type: ignore
+                        cls.value = np.float64(v.group(1)) * UREG(f"delta_deg{non_num}") + UREG.Quantity(0, UREG.degC).to(cls.units.func(cls))  # type: ignore
                 else:
                     cls.value = np.float64(v.group(1)) * UREG(non_num)
             else:
