@@ -23,15 +23,26 @@ for module in (
     mod_name = str(Path(module).relative_to(package_path).with_suffix("")).replace(
         "/", "."
     )
-    if (
-        not mod_name.startswith("__")
-        and not mod_name.endswith("__")
-        and f"{__package__}.{mod_name}" not in sys.modules
-    ):
+    if not mod_name.startswith("__") and not mod_name.endswith("__"):
         __all__.append(mod_name)
-        mod = importlib.import_module(f".{mod_name}", package=__package__)
+        if f"{__package__}.{mod_name}" in sys.modules:
+            mod = sys.modules[f"{__package__}.{mod_name}"]
+        else:
+            mod = importlib.import_module(f".{mod_name}", package=__package__)
+
         vars().update(
             filter(lambda e: e[0] in getattr(mod, "__all__", []), vars(mod).items())
         )
 
-__all__.extend(chain.from_iterable(map(lambda m: getattr(m, "__all__", []), filter(lambda m: getattr(m, "__package__", None) == __package__, vars().copy().values()))))  # type: ignore
+__all__.extend(
+    chain.from_iterable(
+        map(
+            lambda m: getattr(m, "__all__", []),
+            filter(
+                lambda m: getattr(m, "__package__", None) == __package__,
+                vars().copy().values(),
+            ),
+        )
+    )
+)
+__all__ = list(set(__all__))

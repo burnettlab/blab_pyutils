@@ -1,5 +1,5 @@
 [project]
-name = "pyutils"
+name = "blab-pyutils"
 version = "0.1.0"
 description = "Collection of various python utilities developed by Burnett Lab @ Villanova University"
 readme = "README.md"
