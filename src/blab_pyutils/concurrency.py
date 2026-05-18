@@ -7,8 +7,8 @@ from typing import Any, Callable, Dict, Optional, Tuple
 
 from auto_all import public
 
-from pyutils.decorators import redirect_output, wrap_once
-from pyutils.funcs import get_anno_class
+from blab-pyutils.decorators import redirect_output, wrap_once
+from blab-pyutils.funcs import get_anno_class
 
 
 @public

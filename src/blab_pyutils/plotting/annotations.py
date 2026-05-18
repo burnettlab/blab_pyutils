@@ -11,7 +11,7 @@ from matplotlib.axes import Axes
 from matplotlib.axis import Axis
 from matplotlib.text import Text
 
-from pyutils.units.utility import unit_str_addon
+from blab-pyutils.units.utility import unit_str_addon
 
 
 @public

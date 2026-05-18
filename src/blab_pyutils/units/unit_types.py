@@ -10,7 +10,7 @@ from pint import Quantity, Unit
 from pint.errors import OffsetUnitCalculusError
 from pint.facets.plain import PlainQuantity, PlainUnit
 
-from pyutils.types import NUM, T, Vector
+from blab-pyutils.types import NUM, T, Vector
 
 from . import NUMBER_RE, UREG
 
