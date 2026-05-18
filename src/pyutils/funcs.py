@@ -58,7 +58,7 @@ def create_dummy_function(
     Creates a dummy function with the same signature as provided that just returns the arguments.
     """
     if isinstance(sig, Callable):
-        source_fname = sig.__name__
+        source_fname = source_fname or sig.__name__
         sig = inspect.signature(sig)
     else:
         assert (
