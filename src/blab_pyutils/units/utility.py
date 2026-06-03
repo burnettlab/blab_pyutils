@@ -17,7 +17,8 @@ from .unit_types import *
 from .unit_types import NUM
 
 
-def has_unit(x: NUM):
+@public
+def has_unit(x: NUM) -> bool:
     return isinstance(x, (Quantity, PlainQuantity)) or (
         isinstance(x, np.ndarray)
         and issubclass(x.dtype.type, (Quantity, PlainQuantity))
