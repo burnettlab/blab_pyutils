@@ -4,6 +4,7 @@ import ast
 import datetime
 import gc
 import inspect
+import logging
 import os
 import pickle
 import re
@@ -13,11 +14,14 @@ from copy import deepcopy
 from functools import partial, wraps
 from itertools import chain
 from pathlib import Path
-from typing import *
+from typing import Any, Callable, Optional
 
+import cloudpickle
 from auto_all import public
 
 from .funcs import compare_args
+
+LOGGER = logging.getLogger(__name__)
 
 
 @public
@@ -97,9 +101,21 @@ def save_state(func: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator to save and restore the state of the object."""
 
     @wraps(func)
-    def save_state_wrapper(*args, **kwargs):
-        obj = deepcopy(args[0])
-        return func(obj, *args[1:], **kwargs)
+    def save_state_wrapper(obj: Any, *args, **kwargs):
+        # for dump, load in [
+        #     (pickle.dumps, pickle.loads),
+        #     (cloudpickle.dumps, cloudpickle.loads),
+        # ]:
+        #     try:
+        #         pre_state = dump(obj)
+        #         result = func(obj, *args, **kwargs)
+        #         obj = load(pre_state)
+        #         return result
+        #     except TypeError as e:
+        #         continue
+
+        obj = deepcopy(obj)
+        return func(obj, *args, **kwargs)
 
     return save_state_wrapper
 
@@ -121,17 +137,17 @@ def DetailedError(func: Callable[..., Any]) -> Callable[..., Any]:
             if all(f != test_fname for f in funcname_iter):
                 traceback_frames = inspect.getinnerframes(exc_traceback)
                 for frame in traceback_frames:
-                    print(
+                    LOGGER.debug(
                         f"File: {frame.filename}, Line: {frame.lineno}, Function: {frame.function}"
                     )
-                    print(
+                    LOGGER.debug(
                         f"  Code: {frame.code_context[0].strip() if frame.code_context else 'No code context'}"
                     )
-                    print(
+                    LOGGER.debug(
                         f"  Local variables: {dict(filter(lambda e: not e[0].startswith('_'), frame.frame.f_locals.items()))}"
                     )
                 if hasattr(e, "args"):
-                    print(f"Exception args: {e.args}")
+                    LOGGER.debug(f"Exception args: {e.args}")
             raise e
 
     return error_wrapper
@@ -186,7 +202,7 @@ def pickle_output(
 
             # Load the input arguments and check if they match the current function call
             with open(f_input, "rb") as f_in:
-                input_args, input_kwargs = pickle.load(f_in)
+                input_args, input_kwargs = cloudpickle.load(f_in)
 
             if len(input_args) == len(args) and len(input_kwargs) == len(kwargs):
                 if all(compare_args(*args) for args in zip(input_args, args)) and all(
@@ -200,9 +216,9 @@ def pickle_output(
                     assert (
                         f_output.exists()
                     ), f"Output file {f_output} does not exist for input {f_input}"
-                    print(f"Loading previous output for {fname} from {f_output}")
+                    LOGGER.info(f"Loading previous output for {fname} from {f_output}")
                     with open(f_output, "rb") as f_out:
-                        res = pickle.load(f_out)
+                        res = cloudpickle.load(f_out)
                     running = False
                     break
 
@@ -215,14 +231,14 @@ def pickle_output(
                 / f"{datetime.datetime.now().strftime(date_format)}_input.pkl",
                 "wb",
             ) as f_in:
-                pickle.dump((args, kwargs), f_in)
+                cloudpickle.dump((args, kwargs), f_in)
 
             with open(
                 func_data_path
                 / f"{datetime.datetime.now().strftime(date_format)}_output.pkl",
                 "wb",
             ) as f_out:
-                pickle.dump(res, f_out)
+                cloudpickle.dump(res, f_out)
 
         return res
 

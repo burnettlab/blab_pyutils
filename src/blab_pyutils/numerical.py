@@ -1,6 +1,7 @@
+import logging
 from copy import deepcopy
 from functools import wraps
-from typing import *
+from typing import Any, Callable, Generator, Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -8,6 +9,8 @@ import scipy.interpolate as interp
 from auto_all import public
 
 from .funcs import compare_args
+
+LOGGER = logging.getLogger(__name__)
 
 
 @public
@@ -158,7 +161,7 @@ def converge_iter(*, max_iter=5) -> Generator[None, Tuple[Any, ...], None]:
     """Generator to iteratively converge a set of values.
     Yields control back to the caller until convergence is reached or max_iter is exceeded.
     """
-    assert max_iter > 0, "max_iter must be greater than 0"
+    assert max_iter >= 0, "max_iter must be positive or zero"
     args = yield
     if not isinstance(args, tuple):
         args = (args,)
@@ -170,6 +173,6 @@ def converge_iter(*, max_iter=5) -> Generator[None, Tuple[Any, ...], None]:
             new_args = (new_args,)
 
         if all(compare_args(a, b) for a, b in zip(args, new_args, strict=True)):
-            print(f"Converged after {iter_count+1} iterations.")
+            LOGGER.debug(f"Converged after {iter_count+1} iterations.")
             break
         args = new_args

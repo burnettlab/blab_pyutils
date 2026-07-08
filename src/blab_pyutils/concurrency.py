@@ -2,6 +2,7 @@ import concurrent.futures as cf
 import inspect
 import multiprocessing.pool as mp
 import os
+import logging
 from functools import partial, wraps
 from typing import Any, Callable, Dict, Optional, Tuple
 
@@ -9,6 +10,8 @@ from auto_all import public
 
 from blab_pyutils.decorators import redirect_output, wrap_once
 from blab_pyutils.funcs import get_anno_class
+
+LOGGER = logging.getLogger(__name__)
 
 
 @public
@@ -51,11 +54,11 @@ def max_threads(func: Callable[..., Any]) -> Callable[..., Any]:
                 ),
                 inspect.stack(),
             ):
-                print("Found nested multithreading, setting max_threads to 1")
+                LOGGER.debug("Found nested multithreading, setting max_threads to 1")
                 max_threads = 1
                 break
 
-            print(f"Using {max_threads=} for {f_name}")
+            LOGGER.info(f"Using {max_threads=} for {f_name}")
         else:
             max_threads = 1
 

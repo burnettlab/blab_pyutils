@@ -1,6 +1,7 @@
 """Functions to manage text for plots"""
 
 from dataclasses import dataclass
+import logging
 from functools import wraps
 from typing import Callable, Dict, List, Optional, Self
 
@@ -12,6 +13,9 @@ from matplotlib.axis import Axis
 from matplotlib.text import Text
 
 from blab_pyutils.units.utility import unit_str_addon
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 @public
@@ -115,8 +119,8 @@ class TextPositioner:
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         if exc_type:
-            print(exc_val)
-            print(exc_tb)
+            LOGGER.error(exc_val)
+            LOGGER.error(exc_tb)
             return False
 
         adjust_text(self.texts, **self.kwargs)

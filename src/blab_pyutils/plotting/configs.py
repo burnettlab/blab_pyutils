@@ -4,6 +4,7 @@ from abc import ABC
 from dataclasses import InitVar, dataclass, field
 from functools import partial, reduce
 from typing import Any, Callable, Dict, Optional
+import inspect
 
 import matplotlib as mpl
 from auto_all import public
@@ -57,6 +58,8 @@ class mplConfig(ABC):
 
     def __call__(self, *args, **kwargs) -> Any:
         def wrapper(*args, func: Callable, **kwargs):
+            if args and inspect.isclass(args[0]) and args[0] == self:
+                args = args[1:] if len(args) > 1 else ()
             with mpl.rc_context(self.config_params):
                 return func(*args, **kwargs)
 

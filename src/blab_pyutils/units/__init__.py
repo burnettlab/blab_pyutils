@@ -25,16 +25,16 @@ assert unit_yaml.exists(), "No pint config yaml exists!"
 with open(unit_yaml, "r") as f:
     cfg: Dict = yaml.safe_load(f)
 
-unit_defs_file = cfg["UnitRegistry"].pop("filename", None)
+unit_defs_file = Path(cfg["UnitRegistry"].pop("filename", None))
+
 UREG = UnitRegistry(**cfg["UnitRegistry"])
 UREG.default_preferred_units = list(map(lambda k: getattr(UREG, k), cfg.get("default_preferred_units", [])))  # type: ignore
 if cfg.get("Matplotlib") is not None:
     UREG.setup_matplotlib(enable=cfg["Matplotlib"])
 if unit_defs_file is not None:
-    if unit_yaml == package_path / "default.cfg":
+    if unit_yaml == package_path / "default.yaml" or not unit_defs_file.is_absolute():
         unit_defs_file = unit_yaml.parent / unit_defs_file
-    else:
-        unit_defs_file = Path(unit_defs_file).resolve()
+    unit_defs_file = unit_defs_file.resolve()
     assert (
         unit_defs_file.exists()
     ), f"Unit definitions file {unit_defs_file} does not exist!"
@@ -51,7 +51,7 @@ noncfg_keys = {
 }
 
 
-def setup_from_dict(d: Dict, keys: Tuple[Any] = ()):
+def setup_from_dict(d: Dict, keys: Tuple[Any, ...] = ()):
     for k, v in filter(lambda e: keys + (e[0],) not in noncfg_keys, d.items()):
         if isinstance(v, dict):
             setup_from_dict(v, keys + (k,))

@@ -1,6 +1,7 @@
 import ast
 import inspect
 import re
+import sys
 from types import CodeType
 from typing import *
 
@@ -26,6 +27,8 @@ def reduce_valid(
 @public
 def get_anno_class(anno: inspect.Parameter):
     """Gets the annotation class associated with a type annotation (if any)."""
+    if not hasattr(anno, "__args__") and hasattr(anno, "__origin__"):
+        return get_anno_class(anno.__origin__)
     return next(map(get_anno_class, getattr(anno, "__args__", [])), anno)
 
 

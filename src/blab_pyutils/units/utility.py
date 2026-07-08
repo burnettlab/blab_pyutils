@@ -50,6 +50,14 @@ def magnitude(x: NUM) -> NUM:
 
 
 @public
+def preferred(x: NUM) -> NUM:
+    """Convert a Quantity or UnitType to its preferred units, else return x unchanged."""
+    if isinstance(x, (Quantity, PlainQuantity)):
+        return x.to_preferred()
+    return x
+
+
+@public
 def has_units_in_sig(func: Callable[..., Any]) -> bool:
     """Check if a function has any unit annotations in its signature."""
     try:
@@ -239,7 +247,7 @@ def apply_unit_wraps(cls: object) -> object:
     """
 
     def class_callables(c):
-        for k in getattr(c, "__dict__", {k: None for k in dir(c)}).keys():
+        for k in getattr(c, "__dict__", {k: None for k in dir(c)}).copy().keys():
             if callable(attr := getattr(c, k, None)):
                 try:
                     yield k, attr
@@ -257,12 +265,17 @@ def apply_unit_wraps(cls: object) -> object:
                 cls,
                 key,
                 property(
-                    *map(
-                        lambda n: dynamic_unit_wrap(getattr(attr, n)),
-                        filter(
-                            lambda n: getattr(attr, n, None),
-                            ("fget", "fset", "fdel", "__doc__"),
-                        ),
+                    **dict(
+                        map(
+                            lambda n: (
+                                n.strip("_"),
+                                dynamic_unit_wrap(getattr(attr, n)),
+                            ),
+                            filter(
+                                lambda n: getattr(attr, n, None),
+                                ("fget", "fset", "fdel", "__doc__"),
+                            ),
+                        )
                     )
                 ),
             )

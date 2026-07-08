@@ -5,6 +5,8 @@ import sys
 from itertools import chain
 from pathlib import Path
 
+__all__ = []
+
 # Import wanted submodules and construct __all__
 package_path = Path(__file__).parent
 

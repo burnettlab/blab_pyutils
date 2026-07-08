@@ -2,6 +2,7 @@
 
 import os
 import re
+import logging
 from functools import wraps
 from pathlib import Path
 from typing import Callable
@@ -11,6 +12,9 @@ import matplotlib.pyplot as plt
 from auto_all import public
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 @public
 def save_plots(func: Callable) -> Callable:
     """Decorator to save plots to the output directory.
@@ -18,19 +22,20 @@ def save_plots(func: Callable) -> Callable:
     """
 
     @wraps(func)
-    def save_plots_wrapper(self, *args, obscure_plot: bool = True, **kwargs):
-        plots = func(self, *args, obscure_plot=obscure_plot, **kwargs)
+    def save_plots_wrapper(*args, obscure_plot: bool = True, **kwargs):
+        if not (plots := func(*args, obscure_plot=obscure_plot, **kwargs)):
+            return
 
         try:
             if obscure_plot:
                 images_dir = Path.cwd() / "Images"
             elif env_path := os.getenv("IMAGES_DIR"):
-                images_dir = Path(env_path) / "data"
+                images_dir = Path(env_path) / "data" / "plots"
             else:
                 raise FileNotFoundError("No images directory specified.")
             images_dir.mkdir(parents=True, exist_ok=True)
         except FileNotFoundError as e:
-            print(f"Warning: {e}. Plots will not be saved to disk.")
+            LOGGER.warning(f"{e}\nPlots will not be saved to disk.")
             images_dir = None
 
         for plot_name, fig in plots.items():
